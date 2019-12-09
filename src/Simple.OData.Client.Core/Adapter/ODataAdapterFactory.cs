@@ -117,7 +117,10 @@ namespace Simple.OData.Client
         {
             try
             {
-                var assembly = LoadAdapterAssembly(modelAdapterAssemblyName);
+				Assembly assembly = Assembly.GetExecutingAssembly();
+				var adapterType = assembly.GetType(modelAdapterTypeName);
+				if(adapterType == null)
+					assembly = LoadAdapterAssembly(modelAdapterAssemblyName);
                 var ctor = FindAdapterConstructor(assembly, typeCache, modelAdapterTypeName, ctorParams);
                 return ctor.Invoke(ctorParams) as IODataModelAdapter;
             }
@@ -145,10 +148,16 @@ namespace Simple.OData.Client
         {
             try
             {
-                var assemblyName = new AssemblyName(adapterAssemblyName);
-                var assembly = Assembly.Load(assemblyName);
+				Assembly assembly = Assembly.GetExecutingAssembly();
+				var adapterType = assembly.GetType(adapterTypeName);
+				if (adapterType == null)
+				{
+					var assemblyName = new AssemblyName(adapterAssemblyName);
+					assembly = Assembly.Load(assemblyName);
+					adapterType = assembly.GetType(adapterTypeName);
+				}
 
-                var constructors = typeCache.GetDeclaredConstructors(assembly.GetType(adapterTypeName));
+                var constructors = typeCache.GetDeclaredConstructors(adapterType);
 
                 var ctor = constructors.Single(x =>
                     x.GetParameters().Count() == ctorParams.Count() &&

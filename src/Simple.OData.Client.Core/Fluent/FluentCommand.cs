@@ -54,9 +54,9 @@ namespace Simple.OData.Client
                 _details.DerivedCollectionExpression = null;
             }
 
-            if (!ReferenceEquals(_details.FilterExpression, null))
+            if (!ReferenceEquals(_details.GetFilterExpression(EntityCollection.Name), null))
             {
-                _details.NamedKeyValues = TryInterpretFilterExpressionAsKey(_details.FilterExpression);
+                _details.NamedKeyValues = TryInterpretFilterExpressionAsKey(_details.GetFilterExpression(EntityCollection.Name));
                 if (_details.NamedKeyValues == null)
                 {
                     var entityCollection = this.EntityCollection;
@@ -68,20 +68,37 @@ namespace Simple.OData.Client
                             entityCollection = collection;
                         }
                     }
-                    _details.Filter = _details.FilterExpression.Format(
-                        new ExpressionContext(_details.Session, entityCollection, null, this.DynamicPropertiesContainerName));
+                    _details.SetFilter(EntityCollection.Name,_details.GetFilterExpression(EntityCollection.Name).Format(
+                        new ExpressionContext(_details.Session, entityCollection, null, this.DynamicPropertiesContainerName)));
                 }
                 else
                 {
                     _details.KeyValues = null;
                     _details.TopCount = -1;
                 }
-                if (_details.FilterExpression.HasTypeConstraint(_details.DerivedCollectionName))
+                if (_details.GetFilterExpression(EntityCollection.Name).HasTypeConstraint(_details.DerivedCollectionName))
                 {
                     _details.DerivedCollectionName = null;
                 }
-                _details.FilterExpression = null;
+                _details.m_FilterExpressions.Remove(EntityCollection.Name);
             }
+
+			if (_details.Session.Adapter.AdapterVersion != AdapterVersion.V3)
+			{
+				foreach (KeyValuePair<string, ODataExpression> entityFilter in _details.m_FilterExpressions)
+				{
+					_details.SetFilter(entityFilter.Key, entityFilter.Value.Format(
+							new ExpressionContext(_details.Session, new EntityCollection(String.Format("{0}/{1}", EntityCollection.Name, entityFilter.Key)), null, this.DynamicPropertiesContainerName)));
+				}
+			}else
+			{
+				foreach (KeyValuePair<string, ODataExpression> entityFilter in _details.m_FilterExpressions)
+				{
+					_details.SetFilter(entityFilter.Key, entityFilter.Value.Format(
+							new ExpressionContext(_details.Session, EntityCollection, null, this.DynamicPropertiesContainerName)));
+				}
+			}
+			_details.m_FilterExpressions.Clear();
 
             if (!ReferenceEquals(_details.LinkExpression, null))
             {
@@ -265,21 +282,32 @@ namespace Simple.OData.Client
         {
             if (IsBatchResponse) return this;
 
-            if (string.IsNullOrEmpty(_details.Filter))
-                _details.Filter = filter;
+			string currentFilter = _details.GetFilter(EntityCollection.Name);
+			if (string.IsNullOrEmpty(currentFilter))
+                _details.SetFilter(EntityCollection.Name, filter);
             else
-                _details.Filter = $"({_details.Filter}) and ({filter})";
+                _details.SetFilter(EntityCollection.Name, $"({currentFilter}) and ({filter})");
             return this;
         }
 
-        public FluentCommand Filter(ODataExpression expression)
-        {
+		public FluentCommand Filter(ODataExpression expression)
+		{
             if (IsBatchResponse) return this;
 
-            if (ReferenceEquals(_details.FilterExpression, null))
-                _details.FilterExpression = expression;
-            else
-                _details.FilterExpression = _details.FilterExpression && expression;
+			if (!ReferenceEquals(expression, null))
+			{
+				IDictionary<string, IList<ODataExpression>> entityFilters = expression.ProcessFilter(_details.Session, EntityCollection);
+				foreach(KeyValuePair<string, IList<ODataExpression>> entityFilter in entityFilters)
+				{
+					foreach (ODataExpression filter in entityFilter.Value)
+					{
+						if (!_details.EntitiesMap.TryGetValue(entityFilter.Key, out string mappedEntity))
+							mappedEntity = entityFilter.Key;
+						_details.AddFilterExpression(mappedEntity, filter);
+					}
+				}
+			}
+
             return this;
         }
 
@@ -345,6 +373,14 @@ namespace Simple.OData.Client
             _details.ExpandAssociations.AddRange(SplitItems(associations).Select(x => new KeyValuePair<string, ODataExpandOptions>(x, ODataExpandOptions.ByValue())));
             return this;
         }
+
+		public FluentCommand ExpandMap(params KeyValuePair<string, string>[] associationsMap)
+		{
+			foreach (KeyValuePair<string, string> map in associationsMap)
+				_details.EntitiesMap[map.Key] = map.Value;
+			return Expand(associationsMap.Select(map => map.Value));
+		}
+
 
         public FluentCommand Expand(ODataExpandOptions expandOptions, params string[] associations)
         {
@@ -563,7 +599,7 @@ namespace Simple.OData.Client
 
         internal bool HasKey => _details.KeyValues != null && _details.KeyValues.Count > 0 || _details.NamedKeyValues != null && _details.NamedKeyValues.Count > 0;
 
-        internal bool HasFilter => !string.IsNullOrEmpty(_details.Filter) || !ReferenceEquals(_details.FilterExpression, null);
+        internal bool HasFilter => !string.IsNullOrEmpty(_details.GetFilter(EntityCollection.Name)) || !ReferenceEquals(_details.GetFilterExpression(EntityCollection.Name), null); 
 
         internal bool HasSearch => !string.IsNullOrEmpty(_details.Search);
 

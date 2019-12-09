@@ -165,8 +165,8 @@ namespace Simple.OData.Client
                 FunctionFormat == FunctionFormat.Query)
                 queryClauses.Add(string.Join("&", command.CommandData.Select(x => $"{x.Key}={ConvertValueToUriLiteral(x.Value, true)}")));
 
-            if (command.Details.Filter != null)
-                queryClauses.Add($"{ODataLiteral.Filter}={EscapeUnescapedString(command.Details.Filter)}");
+            if (command.Details.GetFilter(command.EntityCollection.Name) != null)
+                queryClauses.Add($"{ODataLiteral.Filter}={EscapeUnescapedString(command.Details.GetFilter(command.EntityCollection.Name))}");
 
             if (command.Details.Search != null)
                 queryClauses.Add($"{ODataLiteral.Search}={EscapeUnescapedString(command.Details.Search)}");

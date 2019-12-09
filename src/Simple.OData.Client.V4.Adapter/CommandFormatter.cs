@@ -45,7 +45,7 @@ namespace Simple.OData.Client.V4.Adapter
                     FormatExpansionSegment(x.Key, resultCollection,
                         x.Value,
                         SelectPathSegmentColumns(command.Details.SelectColumns, x.Key),
-                        SelectPathSegmentColumns(command.Details.OrderbyColumns, x.Key))));
+                        SelectPathSegmentColumns(command.Details.OrderbyColumns, x.Key), command.Details.m_Filters)));
                 commandClauses.Add($"{ODataLiteral.Expand}={formattedExpand}");
             }
 
@@ -67,7 +67,7 @@ namespace Simple.OData.Client.V4.Adapter
         }
 
         private string FormatExpansionSegment(string path, EntityCollection entityCollection,
-            ODataExpandOptions expandOptions, IList<string> selectColumns, IList<KeyValuePair<string, bool>> orderbyColumns)
+            ODataExpandOptions expandOptions, IList<string> selectColumns, IList<KeyValuePair<string, bool>> orderbyColumns, IDictionary<string,string> filters)
         {
             var items = path.Split('/');
             var associationName = _session.Metadata.GetNavigationPropertyExactName(entityCollection.Name, items.First());
@@ -86,7 +86,7 @@ namespace Simple.OData.Client.V4.Adapter
 
                 var formattedExpand = FormatExpansionSegment(path, entityCollection, expandOptions,
                     SelectPathSegmentColumns(selectColumns, path),
-                    SelectPathSegmentColumns(orderbyColumns, path));
+                    SelectPathSegmentColumns(orderbyColumns, path), filters);
                 clauses.Add($"{ODataLiteral.Expand}={formattedExpand}");
             }
 
@@ -98,6 +98,8 @@ namespace Simple.OData.Client.V4.Adapter
             {
                 clauses.Add($"{ODataLiteral.Levels}={ODataLiteral.Max}");
             }
+			if(filters.TryGetValue(associationName, out string filter) && !string.IsNullOrEmpty(filter))
+				clauses.Add(string.Format("{0}={1}", ODataLiteral.Filter, filter));
 
             if (selectColumns.Any())
             {
