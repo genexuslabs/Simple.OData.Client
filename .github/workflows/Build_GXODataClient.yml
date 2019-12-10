@@ -21,6 +21,6 @@ jobs:
     - name: Package
       run: nuget pack GXOData.Client.nuspec -OutputDirectory build/packages/ -OutputFileNamesWithoutVersion
     - name: Publish
-      run: nuget push build\packages\GXOData.Client.nupkg -Source GPR
+      run: nuget push build\packages\GXOData.Client.nupkg -Source "GitHub"
 
 
