@@ -20,5 +20,10 @@ jobs:
       run: dotnet restore GXOData.Client.sln
     - name: Build
       run: msbuild GXOData.Client.sln /p:Configuration=Release
+    - name: Prepare Nuspec
+      run: |
+        $FILENAME = "GXOData.Client.nuspec"
+        (gc $FILENAME) -replace '#GIT_BRANCH#', $Env:GITHUB_REF | Out-File -encoding ASCII $FILENAME
+        (gc $FILENAME) -replace '#GIT_SHA#', $Env:GITHUB_SHA | Out-File -encoding ASCII $FILENAME
     - name: Package
       run: nuget pack GXOData.Client.nuspec -OutputDirectory build/packages/ -OutputFileNamesWithoutVersion
