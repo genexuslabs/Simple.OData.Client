@@ -8,12 +8,16 @@ jobs:
       Configuration: Release
       SolutionFile: GXOData.Client.sln
       NuspecFile: GXOData.Client.nuspec
+      PackageFolder: build/packages/
 
     runs-on: windows-latest
 
     steps:    
     - name: Checkout
       uses: actions/checkout@v1
+
+    - name: Restore
+      run: dotnet restore $Env:SolutionFile
 
     - name: Build
       run: dotnet msbuild $Env:SolutionFile -p:Configuration=$Env:Configuration
@@ -24,4 +28,4 @@ jobs:
         (gc $Env:NuspecFile) -replace '#GIT_SHA#', $Env:GITHUB_SHA | Out-File -encoding ASCII $Env:NuspecFile
 
     - name: Package
-      run: dotnet pack $Env:SolutionFile --output build/packages/ /p:NuspecFile=..\..\$Env:NuspecFile
+      run: dotnet pack $Env:SolutionFile --output $Env:PackageFolder /p:NuspecFile=..\..\$Env:NuspecFile
