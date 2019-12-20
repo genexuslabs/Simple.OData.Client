@@ -3,7 +3,7 @@
   <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <id>GXOdata.Client</id>
     <authors>Vagif Abilov and GeneXus</authors>
-    <version>5.2.2.1</version>
+    <version>5.2.2.2</version>
     <owners>Vagif Abilov</owners>
     <description>
       GXOdata.Client is a multiplatform OData client library supporting .NET 4.x, .NET Standard, .NET Core, iOS and Android. The adapter provides a great alternative to WCF Data Services client. It does not require generation of context or entity classes and fits RESTful nature of OData services.
