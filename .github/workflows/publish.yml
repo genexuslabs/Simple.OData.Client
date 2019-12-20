@@ -21,7 +21,7 @@ jobs:
 
     - name: Clean previous build #Because self-hosted runners are not cleaned automatically
       run: |
-        Get-ChildItem $Env:PackageFolder -Recurse |
+        Get-ChildItem $Env:PackageFolder -Recurse -ErrorAction SilentlyContinue |
           ForEach-Object {
            rm -Recurse $_.FullName
           }
