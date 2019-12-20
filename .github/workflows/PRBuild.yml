@@ -1,18 +1,15 @@
-name: Publish version of GXOdata.Client.All
+name: Build GXOdata.Client.All
 
-on:
-  release:
-    types: [published]
+on: [pull_request]
 
 jobs:
   build:
     env:
       Configuration: Release
-      NuGetRepository: http://nexus.genexus.com/repository/nuget-hosted/
       SolutionFile: GXOData.Client.sln
       NuspecFile: GXOData.Client.nuspec
 
-    runs-on: [self-hosted, windows]
+    runs-on: windows-latest
 
     steps:    
     - name: Checkout
@@ -28,10 +25,3 @@ jobs:
 
     - name: Package
       run: dotnet pack $Env:SolutionFile --output build/packages/ /p:NuspecFile=..\..\$Env:NuspecFile
-
-    - name: Publish
-      run: |
-        dotnet nuget push build\packages\GXOData.Client.*.nupkg --source GPR
-        dotnet nuget push build\packages\GXOData.Client.*.nupkg --source $Env:NuGetRepository
-      
-
