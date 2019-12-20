@@ -1,33 +1,20 @@
-name: Build prerelease version of GXOdata.Client.All
+name: Build GXOdata.Client.All
 
-on: 
-  push:
-    branches:
-      - 'master'
-      - '**-GX'
-
+on: [pull_request]
 
 jobs:
   build:
     env:
       Configuration: Release
-      NuGetRepository: http://nexus.genexus.com/repository/nuget-prereleases/
       SolutionFile: GXOData.Client.sln
       NuspecFile: GXOData.Client.nuspec
       PackageFolder: build/packages/
 
-    runs-on: [self-hosted, windows]
+    runs-on: windows-latest
 
     steps:    
     - name: Checkout
       uses: actions/checkout@v1
-
-    - name: Clean previous build #Because self-hosted runners are not cleaned automatically
-      run: |
-        Get-ChildItem $Env:PackageFolder -Recurse |
-          ForEach-Object {
-           rm -Recurse $_.FullName
-          }
 
     - name: Restore
       run: dotnet restore $Env:SolutionFile
@@ -39,11 +26,6 @@ jobs:
       run: |
         (gc $Env:NuspecFile) -replace '#GIT_BRANCH#', $Env:GITHUB_REF | Out-File -encoding ASCII $Env:NuspecFile
         (gc $Env:NuspecFile) -replace '#GIT_SHA#', $Env:GITHUB_SHA | Out-File -encoding ASCII $Env:NuspecFile
-        (gc $Env:NuspecFile) -replace '</version>', '-rc</version>' | Out-File -encoding ASCII $Env:NuspecFile
 
     - name: Package
       run: dotnet pack $Env:SolutionFile --output $Env:PackageFolder /p:NuspecFile=..\..\$Env:NuspecFile
-
-    - name: Publish
-      run: dotnet nuget push build\packages\GXOData.Client.*.nupkg --source $Env:NuGetRepository
-
