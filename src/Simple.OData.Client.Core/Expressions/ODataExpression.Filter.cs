@@ -25,11 +25,13 @@ namespace Simple.OData.Client
 
 			if (_operator == ExpressionType.Default && !this.IsValueConversion)
 			{
+				bool isAlwaysTrueFilter = false, isAlwaysFalseFilter = false;
 				currentEntities = this.Reference != null ?
 					ProcessReference(context, EntityCollection, entityFilters, currentEntities, false) : this.Function != null ?
 					ProcessFunction(context, EntityCollection, entityFilters, currentEntities, false) :
-					ProcessValue(context, EntityCollection, entityFilters, currentEntities, false);
-				return AddFilter(EntityCollection, entityFilters, currentEntities, isBase);
+					ProcessValue(context, EntityCollection, entityFilters, currentEntities, isBase, out isAlwaysFalseFilter, out isAlwaysTrueFilter);
+
+				return AddFilter(EntityCollection, entityFilters, currentEntities, isBase, isAlwaysFalseFilter, isAlwaysTrueFilter);
 			}
 			else if (this.IsValueConversion)
 			{
@@ -71,18 +73,23 @@ namespace Simple.OData.Client
 			}
 		}
 
-		private HashSet<string> AddFilter(EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase)
+		private HashSet<string> AddFilter(EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase) => AddFilter(EntityCollection, entityFilters, currentEntities, isBase, false, false);
+
+		private HashSet<string> AddFilter(EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase, bool isAlwaysFalseFilter, bool isAlwaysTrueFilter)
 		{
 			if (isBase)
 			{
-				string filterEntity = (currentEntities == null || currentEntities.Count == 0 || currentEntities.Count > 1) ? EntityCollection.Name : currentEntities.First();
-				IList<ODataExpression> filters;
-				if (!entityFilters.TryGetValue(filterEntity, out filters))
-				{
-					filters = new List<ODataExpression>();
-					entityFilters.Add(filterEntity, filters);
+				if (!isAlwaysTrueFilter)
+				{ // Optimize out always-true filters
+					string filterEntity = (currentEntities == null || currentEntities.Count == 0 || currentEntities.Count > 1) ? EntityCollection.Name : currentEntities.First();
+					IList<ODataExpression> filters;
+					if (!entityFilters.TryGetValue(filterEntity, out filters))
+					{
+						filters = new List<ODataExpression>();
+						entityFilters.Add(filterEntity, filters);
+					}
+					filters.Add(this);
 				}
-				filters.Add(this);
 				return null;
 			}
 			return currentEntities;
@@ -117,8 +124,15 @@ namespace Simple.OData.Client
 			return currentEntities;
 		}
 
-		private HashSet<string> ProcessValue(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase)
+		private HashSet<string> ProcessValue(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase, out bool isAlwaysFalseFilter, out bool isAlwaysTrueFilter)
 		{
+			if (isBase && !IsNull && Value is bool)
+			{
+				isAlwaysTrueFilter = (bool)Value;
+				isAlwaysFalseFilter = !isAlwaysTrueFilter;
+			}
+			else isAlwaysTrueFilter = isAlwaysFalseFilter = false;
+
 			return currentEntities;
 		}
 
