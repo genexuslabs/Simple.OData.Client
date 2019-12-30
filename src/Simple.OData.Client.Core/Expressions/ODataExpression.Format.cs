@@ -236,7 +236,11 @@ namespace Simple.OData.Client
             }
             else
             {
-                return context.Session.Adapter.GetCommandFormatter().ConvertValueToUriLiteral(Value, false);
+				string uriLiteral = context.Session.Adapter.GetCommandFormatter().ConvertValueToUriLiteral(Value, false);
+				if (Value is DateTime &&
+					(context.Session.Settings.Properties?[ODataClientSettings.ExtraProperties.STRINGIZE_DATETIME_VALUES] as bool? == true))
+					return $"'{ uriLiteral }'";
+				return uriLiteral;
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -181,6 +182,14 @@ namespace Simple.OData.Client
         public ODataTrace TraceFilter { get; set; }
 
         /// <summary>
+        /// Gets or sets the extra properties dictionary.
+        /// </summary>
+        /// <value>
+        /// Dictionary with extra properties settings.
+        /// </value>
+		public Dictionary<string, object> Properties { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ODataClientSettings"/> class.
         /// </summary>
         public ODataClientSettings()
@@ -231,6 +240,12 @@ namespace Simple.OData.Client
             this.AfterResponse = session.Settings.AfterResponse;
             this.OnTrace = session.Settings.OnTrace;
             this.TraceFilter = session.Settings.TraceFilter;
-        }
+			this.Properties = session.Settings.Properties == null ? null : new Dictionary<string, object>(session.Settings.Properties);
+		}
+
+		public class ExtraProperties
+		{
+			public const string STRINGIZE_DATETIME_VALUES = "StringizeDatetimeValues";
+		}
     }
 }
