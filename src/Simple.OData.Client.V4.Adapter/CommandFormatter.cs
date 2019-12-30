@@ -140,12 +140,14 @@ namespace Simple.OData.Client.V4.Adapter
             return text;
         }
 
+		private const char ODATA_V3_FORMATTING_ESCAPE_SEPARATOR = '~';
+
         private IList<string> SelectPathSegmentColumns(
             IList<string> columns, string path, IList<string> excludePaths = null)
         {
             if (string.IsNullOrEmpty(path))
             {
-                var resultColumns = columns.Where(x => !HasMultipleSegments(x)).ToList();
+                var resultColumns = columns.Where(x => !HasMultipleSegments(x)).Select(x => x.Replace(ODATA_V3_FORMATTING_ESCAPE_SEPARATOR, '/')).ToList();
                 if (excludePaths != null)
                     resultColumns.AddRange(columns.Where(x => HasMultipleSegments(x) &&
                         !excludePaths.Any(y => FormatFirstSegment(y).Contains(FormatFirstSegment(x)))));
