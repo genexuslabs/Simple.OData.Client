@@ -187,7 +187,7 @@ namespace Simple.OData.Client
         /// <value>
         /// Dictionary with extra properties settings.
         /// </value>
-		public Dictionary<string, object> Properties { get; set; }
+        public Dictionary<string, object> Properties { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ODataClientSettings"/> class.
@@ -240,12 +240,12 @@ namespace Simple.OData.Client
             this.AfterResponse = session.Settings.AfterResponse;
             this.OnTrace = session.Settings.OnTrace;
             this.TraceFilter = session.Settings.TraceFilter;
-			this.Properties = session.Settings.Properties == null ? null : new Dictionary<string, object>(session.Settings.Properties);
-		}
+            this.Properties = session.Settings.Properties == null ? null : new Dictionary<string, object>(session.Settings.Properties);
+        }
 
-		public class ExtraProperties
-		{
-			public const string STRINGIZE_DATETIME_VALUES = "StringizeDatetimeValues";
-		}
+        public class ExtraProperties
+        {
+            public const string STRINGIZE_DATETIME_VALUES = "StringizeDatetimeValues";
+        }
     }
 }

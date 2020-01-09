@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -236,11 +236,11 @@ namespace Simple.OData.Client
             }
             else
             {
-				string uriLiteral = context.Session.Adapter.GetCommandFormatter().ConvertValueToUriLiteral(Value, false);
-				if (Value is DateTime &&
-					(context.Session.Settings.Properties?[ODataClientSettings.ExtraProperties.STRINGIZE_DATETIME_VALUES] as bool? == true))
-					return $"'{ uriLiteral }'";
-				return uriLiteral;
+                string uriLiteral = context.Session.Adapter.GetCommandFormatter().ConvertValueToUriLiteral(Value, false);
+                if (Value is DateTime &&
+                    (context.Session.Settings.Properties?[ODataClientSettings.ExtraProperties.STRINGIZE_DATETIME_VALUES] as bool? == true))
+                    return $"'{ uriLiteral }'";
+                return uriLiteral;
             }
         }
 
