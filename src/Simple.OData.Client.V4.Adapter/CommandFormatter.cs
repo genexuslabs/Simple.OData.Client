@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.OData;
@@ -140,7 +140,7 @@ namespace Simple.OData.Client.V4.Adapter
             return text;
         }
 
-		private const char ODATA_V3_FORMATTING_ESCAPE_SEPARATOR = '~';
+        private const char ODATA_V3_FORMATTING_ESCAPE_SEPARATOR = '~';
 
         private IList<string> SelectPathSegmentColumns(
             IList<string> columns, string path, IList<string> excludePaths = null)
