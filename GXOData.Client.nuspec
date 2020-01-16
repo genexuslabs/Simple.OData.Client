@@ -13,7 +13,7 @@
       GXOdata.Client is a multiplatform OData client library supporting .NET 4.x, .NET Standard, .NET Core, iOS and Android. The adapter provides a great alternative to WCF Data Services client. It does not require generation of context or entity classes and fits RESTful nature of OData services.
       The package GXOdata.Client contains libraries that can work with OData feeds that implement both V1-3 and V4 OData protocol.
     </summary>
-    <repository type="git" url="https://github.com/genexuslabs/Simple.OData.Client.git" branch="#GIT_BRANCH#" commit="#GIT_SHA#" />
+    <repository type="git" url="https://github.com/genexuslabs/Simple.OData.Client.git" branch="" commit="" />
     <license type="expression">MIT</license>
     <copyright>Copyright 2012-2018 Vagif Abilov</copyright>
     <language>en-us</language>
