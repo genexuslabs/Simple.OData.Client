@@ -47,11 +47,11 @@ jobs:
 
         $NEW_PACKAGE_VERSION = $PACKAGE_VERSION + '-rc' + $BUILD_NUMBER
 
+        [xml]$xml = Get-Content $Env:NuspecFile
         $xml.package.metadata.version = $NEW_PACKAGE_VERSION
         $xml.package.metadata.repository.branch = $Env:GITHUB_REF
         $xml.package.metadata.repository.commit = $Env:GITHUB_SHA
 
-        [xml]$xml = Get-Content $Env:NuspecFile
         $xml.Save($Env:NuspecFile)
 
         dotnet msbuild $Env:SolutionFile -p:Configuration=$Env:Configuration /t:Clean,Build
