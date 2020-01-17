@@ -1,8 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	  <!-->TargetFrameworks>net452;netstandard2.0</TargetFrameworks-->
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Simple.OData.Client</RootNamespace>
 	  <OutputPath>$(SolutionDir)/build/$(Configuration)/$(AssemblyName)/$(TargetFramework)/</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
@@ -43,5 +41,9 @@
 		<Compile Include="..\Simple.OData.Client.V3.Adapter\**\*.cs" Exclude="**\AssemblyInfo.cs" Label="V3Adapter" />
 		<Compile Include="..\Simple.OData.Client.V4.Adapter\**\*.cs" Exclude="**\AssemblyInfo.cs" Label="V4Adapter" />
   </ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Properties\CommonAssemblyVersion.cs" />
+	</ItemGroup>
 
 </Project>
