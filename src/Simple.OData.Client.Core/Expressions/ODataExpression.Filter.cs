@@ -11,11 +11,11 @@ namespace Simple.OData.Client
 		public IDictionary<string, IList<ODataExpression>> ProcessFilter(ISession session, EntityCollection EntityCollection)
 		{
 			IDictionary<string, IList<ODataExpression>> entityFilters = new Dictionary<string, IList<ODataExpression>>();
-			ProcessFilter(new ExpressionContext(session), EntityCollection, entityFilters, null, true);
+			ProcessFilter(new ExpressionContext(session), EntityCollection, entityFilters, null, true, true);
 			return entityFilters;
 		}
 
-		internal HashSet<string> ProcessFilter(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase)
+		internal HashSet<string> ProcessFilter(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase, bool updateReferences)
 		{
 			if (context.IsQueryOption && _operator != ExpressionType.Default &&
 				_operator != ExpressionType.And && _operator != ExpressionType.Equal)
@@ -27,8 +27,8 @@ namespace Simple.OData.Client
 			{
 				bool isAlwaysTrueFilter = false, isAlwaysFalseFilter = false;
 				currentEntities = this.Reference != null ?
-					ProcessReference(context, EntityCollection, entityFilters, currentEntities, false) : this.Function != null ?
-					ProcessFunction(context, EntityCollection, entityFilters, currentEntities, false) :
+					ProcessReference(context, EntityCollection, entityFilters, currentEntities, false, updateReferences) : this.Function != null ?
+					ProcessFunction(context, EntityCollection, entityFilters, currentEntities, false, updateReferences) :
 					ProcessValue(context, EntityCollection, entityFilters, currentEntities, isBase, out isAlwaysFalseFilter, out isAlwaysTrueFilter);
 
 				return AddFilter(EntityCollection, entityFilters, currentEntities, isBase, isAlwaysFalseFilter, isAlwaysTrueFilter);
@@ -48,26 +48,45 @@ namespace Simple.OData.Client
 						expr = new ODataExpression(result);
 					}
 				}
-				return ProcessExpression(expr, context, EntityCollection, entityFilters, currentEntities, false);
+				return ProcessExpression(expr, context, EntityCollection, entityFilters, currentEntities, false, updateReferences);
 			}
 			else if (_operator == ExpressionType.Not || _operator == ExpressionType.Negate)
 			{
-				currentEntities = ProcessExpression(_left, context, EntityCollection, entityFilters, currentEntities, false);
-				return AddFilter(EntityCollection, entityFilters, currentEntities, isBase);
+                bool notParity = false;
+                ODataExpression notExp = this;
+                while(notExp._left._operator == ExpressionType.Not || notExp._left._operator == ExpressionType.Negate)
+                {
+                    notParity = !notParity;
+                    notExp = notExp._left;
+                }
+                ODataExpression baseExp = notExp;
+                notExp = notExp._left;
+                if(isBase && !notParity && (notExp._operator == ExpressionType.Or || notExp._operator == ExpressionType.OrElse))
+                { // Apply DeMorgan for filters not(expL or expR) when expL and expR use different entities
+                    HashSet<string> leftSet = ProcessExpression(notExp._left, context, EntityCollection, entityFilters, new HashSet<string>(), false, false) ?? new HashSet<string>();
+                    HashSet<string> rightSet = ProcessExpression(notExp._right, context, EntityCollection, entityFilters, new HashSet<string>(), false, false) ?? new HashSet<string>();
+                    if (!leftSet.SetEquals(rightSet))
+                    {
+                        notExp = !notExp._left && !notExp._right;
+                        notParity = true;
+                    }
+                }
+                currentEntities = ProcessExpression(notExp, context, EntityCollection, entityFilters, currentEntities, isBase && notParity, updateReferences);
+                return notParity ? currentEntities : baseExp.AddFilter(EntityCollection, entityFilters, currentEntities, isBase);
 			}
 			else
 			{
 				if (isBase && (_operator == ExpressionType.And || _operator == ExpressionType.AndAlso))
 				{
-					ProcessExpression(_left, context, EntityCollection, entityFilters, null, true);
-					ProcessExpression(_right, context, EntityCollection, entityFilters, null, true);
+					ProcessExpression(_left, context, EntityCollection, entityFilters, null, true, updateReferences);
+					ProcessExpression(_right, context, EntityCollection, entityFilters, null, true, updateReferences);
 					return null;
 				}
 				else
 				{
 
-					currentEntities = ProcessExpression(_left, context, EntityCollection, entityFilters, currentEntities, false);
-					currentEntities = ProcessExpression(_right, context, EntityCollection, entityFilters, currentEntities, false);
+					currentEntities = ProcessExpression(_left, context, EntityCollection, entityFilters, currentEntities, false, updateReferences);
+					currentEntities = ProcessExpression(_right, context, EntityCollection, entityFilters, currentEntities, false, updateReferences);
 				}
 				return AddFilter(EntityCollection, entityFilters, currentEntities, isBase);
 			}
@@ -95,7 +114,7 @@ namespace Simple.OData.Client
 			return currentEntities;
 		}
 
-		private static HashSet<string> ProcessExpression(ODataExpression expr, ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase)
+		private static HashSet<string> ProcessExpression(ODataExpression expr, ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase, bool updateReferences)
 		{
 			if (ReferenceEquals(expr, null))
 			{
@@ -103,24 +122,24 @@ namespace Simple.OData.Client
 			}
 			else
 			{
-				return expr.ProcessFilter(context, EntityCollection, entityFilters, currentEntities, isBase);
+				return expr.ProcessFilter(context, EntityCollection, entityFilters, currentEntities, isBase, updateReferences);
 			}
 		}
 
-		private HashSet<string> ProcessFunction(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase)
+		private HashSet<string> ProcessFunction(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase, bool updateReferences)
 		{
-			currentEntities = ProcessExpression(_functionCaller, context, EntityCollection, entityFilters, currentEntities, isBase);
+			currentEntities = ProcessExpression(_functionCaller, context, EntityCollection, entityFilters, currentEntities, isBase, updateReferences);
 			foreach (ODataExpression expr in Function.Arguments)
 			{
-				currentEntities = ProcessExpression(expr, context, EntityCollection, entityFilters, currentEntities, isBase);
+				currentEntities = ProcessExpression(expr, context, EntityCollection, entityFilters, currentEntities, isBase, updateReferences);
 			}
 			return currentEntities;
 		}
 
-		private HashSet<string> ProcessReference(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase)
+		private HashSet<string> ProcessReference(ExpressionContext context, EntityCollection EntityCollection, IDictionary<string, IList<ODataExpression>> entityFilters, HashSet<string> currentEntities, bool isBase, bool updateReferences)
 		{
 			currentEntities = currentEntities ?? new HashSet<string>();
-			currentEntities.Add(GetEntityPath(context, EntityCollection));
+			currentEntities.Add(GetEntityPath(context, EntityCollection, updateReferences && (context.Session.Adapter.AdapterVersion != AdapterVersion.V3)));
 			return currentEntities;
 		}
 
@@ -136,7 +155,7 @@ namespace Simple.OData.Client
 			return currentEntities;
 		}
 
-		private string GetEntityPath(ExpressionContext context, EntityCollection entityCollection)
+		private string GetEntityPath(ExpressionContext context, EntityCollection entityCollection, bool updateReference)
 		{
 			string[] path = Reference.Split('/');
 			ISession _session = context.Session;
@@ -150,7 +169,7 @@ namespace Simple.OData.Client
 				string associationName = _session.Metadata.GetNavigationPropertyExactName(entityCollection.Name, path[to]);
 				if (_session.Metadata.IsNavigationPropertyCollection(entityCollection.Name, associationName))
 				{
-					if(context.Session.Adapter.AdapterVersion != AdapterVersion.V3)
+					if(updateReference)
 						Reference = string.Join("/", path, to + 1, path.Length - to - 1);
 					return string.Join("/", path, 0, to + 1);
 				}
