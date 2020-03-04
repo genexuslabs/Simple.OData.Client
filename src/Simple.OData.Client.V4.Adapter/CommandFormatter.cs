@@ -68,13 +68,12 @@ namespace Simple.OData.Client.V4.Adapter
                     FormatClause(commandClauses, resultCollection, command.Details.OrderbyColumns, ODataLiteral.OrderBy, FormatOrderByItem);
                 }
             }*/
-
-            var l = command.Details.OrderbyColumns
-                 .Where(o => !command.Details.ExpandAssociations.Select(ea => ea.Key).Any(ea => IsInnerCollectionOrderBy(ea, resultCollection, o.Key))).ToList();
+            var keyValues = command.HasKey ? command.KeyValues : null;
 
             FormatClause(commandClauses, resultCollection,
                 command.Details.OrderbyColumns
-                    .Where(o => !command.Details.ExpandAssociations.Select(ea => ea.Key)
+                    .Where(o => !(keyValues?.ContainsKey(o.Key) == true) &&
+                                !command.Details.ExpandAssociations.Select(ea => ea.Key)
                                 .Any(ea => IsInnerCollectionOrderBy(ea, resultCollection, o.Key))).ToList(),
                 ODataLiteral.OrderBy, FormatOrderByItem);
         }
