@@ -42,7 +42,7 @@ jobs:
         $COMMITS_INTERVAL = (git describe --tags --abbrev=0) + '..HEAD'
         $BUILD_NUMBER = git rev-list --first-parent --count $COMMITS_INTERVAL
 
-        $NEW_PACKAGE_VERSION = $PACKAGE_VERSION + '-rc' + $BUILD_NUMBER
+        $NEW_PACKAGE_VERSION = $PACKAGE_VERSION
 
         [xml]$xml = Get-Content $Env:NuspecFile
         $xml.package.metadata.version = $NEW_PACKAGE_VERSION
