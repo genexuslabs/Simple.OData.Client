@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
@@ -91,12 +91,12 @@ namespace Simple.OData.Client
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
                 var ctor = CtorWithStringAndValue;
-				Expression objectExpression = value.Expression;
-				if ((value.Value != null && value.Value.GetType().IsValue()) ||
-					(value.Value == null && Nullable.GetUnderlyingType(objectExpression.Type) != null))
-				{
-					objectExpression = Expression.Convert(objectExpression, typeof(object));
-				}
+                Expression objectExpression = value.Expression;
+                if ((value.Value != null && value.Value.GetType().IsValue()) ||
+                    (value.Value == null && Nullable.GetUnderlyingType(objectExpression.Type) != null))
+                {
+                    objectExpression = Expression.Convert(objectExpression, typeof(object));
+                }
                 var ctorArguments = new[] { Expression.Constant(binder.Name), objectExpression };
 
                 return new DynamicMetaObject(
@@ -112,13 +112,13 @@ namespace Simple.OData.Client
                     var expression = Expression.New(CtorWithExpressionAndExpressionFunction,
                         new[]
                         {
-                            Expression.Constant(this.Value), 
+                            Expression.Constant(this.Value),
                             Expression.Constant(new ExpressionFunction(binder.Name, args.Select(x => x.Value)))
-                        });
-
+                        }) ;
+                    BindingRestrictions bindingRestrictions = args.Aggregate(BindingRestrictions.Empty, (acc, x) => acc.Merge(BindingRestrictions.GetInstanceRestriction(x.Expression, x.Value)));
                     return new DynamicMetaObject(
                         expression,
-                        BindingRestrictions.GetTypeRestriction(Expression, LimitType));
+                        bindingRestrictions);
                 }
                 else if (string.Equals(binder.Name, ODataLiteral.Any, StringComparison.OrdinalIgnoreCase) ||
                          string.Equals(binder.Name, ODataLiteral.All, StringComparison.OrdinalIgnoreCase))
