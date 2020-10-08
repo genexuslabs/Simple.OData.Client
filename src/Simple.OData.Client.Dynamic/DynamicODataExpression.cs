@@ -69,6 +69,7 @@ namespace Simple.OData.Client
             {
                 ConstructorInfo ctor;
                 Expression[] ctorArguments;
+                BindingRestrictions bindingRestrictions = BindingRestrictions.GetTypeRestriction(Expression, LimitType);
                 if (FunctionMapping.ContainsFunction(binder.Name, 0))
                 {
                     ctor = CtorWithExpressionAndString;
@@ -76,6 +77,9 @@ namespace Simple.OData.Client
                 }
                 else
                 {
+                    if(this.HasValue)
+                        bindingRestrictions = bindingRestrictions.Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value));
+
                     var reference = this.HasValue && !string.IsNullOrEmpty((this.Value as ODataExpression).Reference)
                         ? string.Join("/", (this.Value as ODataExpression).Reference, binder.Name)
                         : binder.Name;
@@ -85,7 +89,7 @@ namespace Simple.OData.Client
 
                 return new DynamicMetaObject(
                     Expression.New(ctor, ctorArguments),
-                    BindingRestrictions.GetTypeRestriction(Expression, LimitType));
+                    bindingRestrictions);
             }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
@@ -114,8 +118,10 @@ namespace Simple.OData.Client
                         {
                             Expression.Constant(this.Value),
                             Expression.Constant(new ExpressionFunction(binder.Name, args.Select(x => x.Value)))
-                        }) ;
-                    BindingRestrictions bindingRestrictions = args.Aggregate(BindingRestrictions.Empty, (acc, x) => acc.Merge(BindingRestrictions.GetInstanceRestriction(x.Expression, x.Value)));
+                        }) ;                    
+                    BindingRestrictions bindingRestrictions = BindingRestrictions.GetTypeRestriction(Expression, LimitType)
+                                                                                 .Merge(BindingRestrictions.GetInstanceRestriction(Expression, Value));
+
                     return new DynamicMetaObject(
                         expression,
                         bindingRestrictions);
