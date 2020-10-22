@@ -5,9 +5,9 @@ on:
     branches:
       - 'master'
       - '**-GX'
-    pull_request
+    pull_request:
     release:
-    	types: [published]
+      types: [published]
 
 jobs:
   build:
@@ -23,8 +23,8 @@ jobs:
     steps:    
     - name: Checkout
       uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      with:
+        fetch-depth: 0
 
     - name: Restore
       run: dotnet restore $Env:SolutionFile
