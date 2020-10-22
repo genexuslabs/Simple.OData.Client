@@ -5,30 +5,26 @@ on:
     branches:
       - 'master'
       - '**-GX'
-
+    pull_request
+    release:
+    	types: [published]
 
 jobs:
   build:
     env:
       BuildProps: src\GXOdata.Client.All\Directory.Build.props
       Configuration: Release
-      NuGetRepository: http://nexus.genexus.com/repository/nuget-prereleases/
       NuspecFile: GXOData.Client.nuspec
       PackageFolder: build/packages/
       SolutionFile: GXOData.Client.sln
 
-    runs-on: [self-hosted, windows]
+    runs-on: windows-latest
 
     steps:    
     - name: Checkout
-      uses: actions/checkout@v1
-
-    - name: Clean previous build #Because self-hosted runners are not cleaned automatically
-      run: |
-        Get-ChildItem $Env:PackageFolder -Recurse -ErrorAction SilentlyContinue |
-          ForEach-Object {
-           rm -Recurse $_.FullName
-          }
+      uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
     - name: Restore
       run: dotnet restore $Env:SolutionFile
@@ -45,7 +41,10 @@ jobs:
         $COMMITS_INTERVAL = (git describe --tags --abbrev=0) + '..HEAD'
         $BUILD_NUMBER = git rev-list --first-parent --count $COMMITS_INTERVAL
 
-        $NEW_PACKAGE_VERSION = $PACKAGE_VERSION + '-rc' + $BUILD_NUMBER
+        $NEW_PACKAGE_VERSION = $PACKAGE_VERSION
+        if ("${{ github.ref }}".StartsWith("refs/heads/")) {
+          $NEW_PACKAGE_VERSION = $NEW_PACKAGE_VERSION + '-rc' + $BUILD_NUMBER
+        }
 
         [xml]$xml = Get-Content $Env:NuspecFile
         $xml.package.metadata.version = $NEW_PACKAGE_VERSION
@@ -60,5 +59,8 @@ jobs:
       run: dotnet pack $Env:SolutionFile --output $Env:PackageFolder /p:NuspecFile=..\..\$Env:NuspecFile
 
     - name: Publish
-      run: dotnet nuget push build\packages\GXOData.Client.*.nupkg --source $Env:NuGetRepository
+      if: github.repository_owner == 'GeneXusLabs' && github.base_ref == ''
+      env:
+        GPRUrl: https://nuget.pkg.github.com/genexuslabs/index.json
+      run: dotnet nuget push build\packages\GXOData.Client.*.nupkg --source $Env:GPRUrl --api-key ${{ secrets.SECURE_TOKEN }}
 
